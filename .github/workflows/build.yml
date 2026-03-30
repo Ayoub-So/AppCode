@@ -1,0 +1,50 @@
+name: Build Docker Image (CI)
+
+on:
+  push:
+    branches: [ develop ]
+    paths:
+      - 'AppCode/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'AppCode/**'
+
+jobs:
+  build:
+    name: Build Docker Image
+    runs-on: [self-hosted, fedora]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./AppCode
+          push: false
+          tags: frost-app:${{ github.sha }}
+
+      - name: Run tests on image (optional)
+        run: |
+          docker build -t frost-app:${{ github.sha }} ./AppCode
+          docker run --rm frost-app:${{ github.sha }} wget -q --spider http://localhost/index.html
+
+  lint:
+    name: Lint code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint on Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: AppCode/Dockerfile
+          ignore: DL3008,DL3009

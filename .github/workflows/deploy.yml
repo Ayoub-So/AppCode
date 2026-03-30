@@ -1,0 +1,112 @@
+name: Build and Deploy App to EKS
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'AppCode/**'
+      - '.github/workflows/deploy.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'AppCode/**'
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: frost-app
+  EKS_CLUSTER_NAME: frost-cluster
+  EKS_NAMESPACE: default
+
+jobs:
+  build:
+    name: Build and Push Docker Image
+    runs-on: [self-hosted, fedora]
+    outputs:
+      image-tag: ${{ steps.image.outputs.tag }}
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG AppCode/
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "registry=$ECR_REGISTRY" >> $GITHUB_OUTPUT
+
+      - name: Print image URI
+        run: echo "Image pushed to ${{ steps.image.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.image.outputs.tag }}"
+
+  Update_manifest:
+    name: Update k8s manifest for ArgoCD
+    needs: build
+    runs-on: [self-hosted, fedora]
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          
+      - name: Get ECR registry
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Clone kube_manifest repo
+        run: |
+          git clone https://github.com/Ayoub-So/kube_manifest.git
+          cd kube_manifest
+          git config user.email "ayoubsoussi.2001@gmail.com"
+          git config user.name "Ayoub Soussi"
+
+      - name: Update deployment manifest with new image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ needs.build.outputs.image-tag }}
+        run: |
+          cd kube_manifest
+          sed -i "s|image: .*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" deployment.yaml
+          cat deployment.yaml
+
+      - name: Commit and push updated manifest
+        run: |
+          cd kube_manifest
+          git add deployment.yaml
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update image to ${{ needs.build.outputs.image-tag }} [skip ci]" && git push)
+
+      - name: Verify manifest update
+        run: |
+          cd kube_manifest
+          echo "Updated deployment manifest:"
+          cat deployment.yaml

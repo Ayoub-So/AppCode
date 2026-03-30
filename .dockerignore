@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.dockerignore
+README.md
+.DS_Store
+.env
+.env.local
+.terraform
+.terraform.*
+terraform.tfstate*
+*.swp
+*.swo
+*~
+.vscode
+.idea

@@ -2,6 +2,8 @@
 
 The Frost App - A responsive static website containerized with Docker and deployed via GitOps on AWS EKS.
 
+[![Watch the demo  video on Google Drive](<https://drive.google.com/file/d/1fpyXiHvTxTbaU0hW0s8Pe7pruLMTh9rJ/view?usp=drive_link>)](<https://drive.google.com/file/d/1UqrTGWTPUVBA81A8ZH15q9pY_CdamB2-/view?usp=drive_link>)
+
 ## 📦 Project Overview
 
 This repository contains the application source code and is part of a **complete CI/CD and GitOps pipeline** across three repositories:

@@ -33,7 +33,7 @@ jobs:
 
       - name: Run tests on image (optional)
         run: |
-          docker build -t frost-app:${{ github.sha }} -f AppCode/Dockerfile AppCode/
+          docker build -t frost-app:${{ github.sha }} -f Dockerfile .
           docker run --rm frost-app:${{ github.sha }} wget -q --spider http://localhost/index.html
 
   lint:

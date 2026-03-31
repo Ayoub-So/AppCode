@@ -4,12 +4,16 @@ on:
   push:
     branches: [ main, develop ]
     paths:
-      - 'AppCode/**'
+      - 'src/**'
+      - 'Dockerfile'
+      - 'nginx.conf'
       - '.github/workflows/deploy.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
-      - 'AppCode/**'
+      - 'src/**'
+      - 'Dockerfile'
+      - 'nginx.conf'
 
 env:
   AWS_REGION: us-east-1

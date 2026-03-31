@@ -2,7 +2,7 @@
 
 The Frost App - A responsive static website containerized with Docker and deployed via GitOps on AWS EKS.
 
-<video src="https://drive.google.com/file/d/1UqrTGWTPUVBA81A8ZH15q9pY_CdamB2-/view?usp=sharing" width="400" controls></video>
+[Watch the demo video here](<https://github.com/user-attachments/assets/23a77b86-821f-4581-a303-737e1219b536>)
 
 
 ## 📦 Project Overview

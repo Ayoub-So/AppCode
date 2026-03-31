@@ -26,14 +26,14 @@ jobs:
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ${{ github.workspace }}/AppCode
-          file: ${{ github.workspace }}/AppCode/Dockerfile
+          context: AppCode
+          file: AppCode/Dockerfile
           push: false
           tags: frost-app:${{ github.sha }}
 
       - name: Run tests on image (optional)
         run: |
-          docker build -t frost-app:${{ github.sha }} -f ${{ github.workspace }}/AppCode/Dockerfile ${{ github.workspace }}/AppCode
+          docker build -t frost-app:${{ github.sha }} -f AppCode/Dockerfile AppCode/
           docker run --rm frost-app:${{ github.sha }} wget -q --spider http://localhost/index.html
 
   lint:
@@ -47,5 +47,5 @@ jobs:
       - name: Run Hadolint on Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: ${{ github.workspace }}/AppCode/Dockerfile
+          dockerfile: AppCode/Dockerfile
           ignore: DL3008,DL3009
